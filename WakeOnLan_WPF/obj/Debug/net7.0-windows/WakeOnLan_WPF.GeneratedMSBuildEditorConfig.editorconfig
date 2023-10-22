@@ -14,4 +14,4 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = WakeOnLan_WPF
-build_property.ProjectDir = C:\Users\Yusuf\Desktop\Wake_On_Lan_WPF-main\Wake_On_Lan_WPF-main\WakeOnLan_WPF_Project\WakeOnLan_WPF\
+build_property.ProjectDir = C:\Users\Yusuf\Source\Repos\Wake_On_Lan_WPF\WakeOnLan_WPF\

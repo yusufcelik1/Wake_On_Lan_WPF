@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using System.Windows.Forms;
+using System.IO;
 
 namespace WakeOnLan_WPF
 {
@@ -12,8 +13,10 @@ namespace WakeOnLan_WPF
             ListDevices();
         }
 
+        // Handle the "Add Device" button click event
         private void AddDevice_btn_Click(object sender, EventArgs e)
         {
+            // Get user input
             string deviceName = deviceName_txtbox.Text;
             string macAddress = macAddress_txtbox.Text;
             string ipAddress = ipAddress_txtbox.Text;
@@ -21,9 +24,10 @@ namespace WakeOnLan_WPF
 
             if (!string.IsNullOrEmpty(macAddress) && !string.IsNullOrEmpty(ipAddress) && !string.IsNullOrEmpty(port))
             {
+                // Construct device information
                 string deviceInfo = $"Device Name: {deviceName}, MAC Address: {macAddress}, IP Address: {ipAddress}, Port: {port}";
 
-                // WakeOnLan klasörünü oluştur
+                // Create the WakeOnLan folder if it doesn't exist
                 string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WakeOnLan");
 
                 if (!Directory.Exists(folderPath))
@@ -31,7 +35,7 @@ namespace WakeOnLan_WPF
                     Directory.CreateDirectory(folderPath);
                 }
 
-                // Dosyaya cihaz bilgilerini ekle
+                // Add device information to a file
                 string filePath = Path.Combine(folderPath, "devices.txt");
 
                 try
@@ -52,17 +56,17 @@ namespace WakeOnLan_WPF
             {
                 MessageBox.Show("Please enter all information.");
             }
-            ListDevices();
         }
 
+        // Handle the "Wake Up" button click event
         private void WakeUp_btn_Click(object sender, EventArgs e)
         {
             if (DeviceList_lstbox.SelectedIndex >= 0)
             {
-                // Seçilen cihazın adını al
+                // Get the selected device's name
                 string selectedDeviceName = DeviceList_lstbox.SelectedItem.ToString();
 
-                // TXT dosyasından cihazın bilgilerini ara
+                // Search for the device's information in the TXT file
                 string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WakeOnLan");
                 string filePath = Path.Combine(folderPath, "devices.txt");
 
@@ -74,7 +78,7 @@ namespace WakeOnLan_WPF
                     {
                         if (line.Contains(selectedDeviceName))
                         {
-                            // Cihazın bilgilerini ayır ve kullan
+                            // Extract and use the device's information
                             string[] parts = line.Split(new string[] { "MAC Address: ", "IP Address: ", "Port: " }, StringSplitOptions.None);
                             if (parts.Length == 4)
                             {
@@ -83,12 +87,12 @@ namespace WakeOnLan_WPF
                                 string ipAddress = parts[2];
                                 string port = parts[3];
 
-                                // Uyandırma işlemini gerçekleştir
+                                // Perform the wake-up operation
                                 if (FormatMacAddress(macAddress, out string formattedMacAddress))
                                 {
                                     SendMagicPacket(formattedMacAddress);
                                     MessageBox.Show($"The device '{deviceName}' with MAC Address '{macAddress}' has been woken up.");
-                                    break; // Cihaz bulundu, döngüyü sonlandır
+                                    break; // Device found, exit the loop
                                 }
                                 else
                                 {
@@ -103,11 +107,13 @@ namespace WakeOnLan_WPF
             {
                 MessageBox.Show("Please select a device to wake up.");
             }
+            ListDevices();
         }
 
+        // Format a MAC address for Wake-on-LAN
         private bool FormatMacAddress(string macAddress, out string formattedMacAddress)
         {
-            // MAC adresini uygun formata dönüştür (örneğin: "00:11:22:33:44:55" -> "001122334455")
+            // Convert the MAC address to the proper format (e.g., "00:11:22:33:44:55" -> "001122334455")
             formattedMacAddress = macAddress.Replace(":", "").Replace("-", "").Replace(" ", "").Replace(",", "");
 
             if (formattedMacAddress.Length == 12)
@@ -121,18 +127,19 @@ namespace WakeOnLan_WPF
             }
         }
 
+        // Send the Wake-on-LAN magic packet
         private void SendMagicPacket(string macAddress)
         {
-            // Wake-on-LAN için gerekli sihirli paketi oluştur
+            // Create the magic packet required for Wake-on-LAN
             byte[] magicPacket = new byte[102];
 
-            // İlk 6 bayt hedef MAC adresi olarak ayarlanır
+            // Set the first 6 bytes as the destination MAC address
             for (int i = 0; i < 6; i++)
             {
                 magicPacket[i] = 0xFF;
             }
 
-            // Sonraki 16 defa hedef MAC adresi tekrarlanır
+            // Repeat the destination MAC address 16 times in the next section
             for (int i = 6; i < 102; i += 6)
             {
                 for (int j = 0; j < 6; j++)
@@ -141,15 +148,15 @@ namespace WakeOnLan_WPF
                 }
             }
 
-            // Uyandırma paketini gönder
+            // Send the wake-up packet
             using (UdpClient client = new UdpClient())
             {
-                client.Connect(IPAddress.Broadcast, 7); // Broadcast adresine gönderilir
+                client.Connect(IPAddress.Broadcast, 7); // Send to the broadcast address
                 client.Send(magicPacket, magicPacket.Length);
             }
         }
 
-
+        // Populate the device list
         private void ListDevices()
         {
             DeviceList_lstbox.Items.Clear();
@@ -158,12 +165,12 @@ namespace WakeOnLan_WPF
 
             if (File.Exists(filePath))
             {
-                // Dosya varsa, içeriğini oku ve cihaz adlarını Listbox1'e ekle
+                // If the file exists, read its contents and add device names to ListBox1
                 string[] lines = File.ReadAllLines(filePath);
 
                 foreach (string line in lines)
                 {
-                    // Burada satırı cihaz adı olarak ekliyoruz. Örneğin, "MAC Address: 00:11:22:33:44:55, IP Address: 192.168.1.100, Port: 9" satırından MAC Adresini alıyoruz.
+                    // Here, we're adding the line as the device name. For example, we're extracting the MAC Address from the line "Device Name: MyDevice, MAC Address: 00:11:22:33:44:55, IP Address: 192.168.1.100, Port: 9".
                     string[] parts = line.Split(new string[] { "Device Name: " }, StringSplitOptions.None);
                     if (parts.Length > 1)
                     {
